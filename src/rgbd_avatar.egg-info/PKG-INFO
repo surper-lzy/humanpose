@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: rgbd-avatar
+Version: 0.1.0
+Summary: RGB-D skeleton recovery and avatar-driving experiments
+Requires-Python: >=3.10

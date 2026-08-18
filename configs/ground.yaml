@@ -1,0 +1,19 @@
+ground:
+  # Use the lower image, where an indoor floor dominates, and exclude the
+  # detected person box before RANSAC.
+  lower_image_fraction: 0.52
+  pixel_stride: 6
+  bbox_exclusion_margin_px: 20
+  max_points_per_frame: 4000
+  max_total_points: 50000
+  min_depth_m: 0.3
+  max_depth_m: 6.0
+
+  ransac_iterations: 800
+  inlier_distance_m: 0.025
+  # The camera can be pitched, but a wall must not pass as a floor.
+  max_tilt_from_camera_up_deg: 45.0
+  min_camera_height_m: 0.5
+  max_camera_height_m: 3.0
+  min_inlier_count: 500
+  random_seed: 20260731

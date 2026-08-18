@@ -1,0 +1,29 @@
+pose:
+  backend: "rtmpose"
+  keypoint_format: "halpe26"
+  model_config: "assets/models/rtmpose/rtmpose-m_8xb512-700e_body8-halpe26-256x192.py"
+  model_checkpoint: "assets/models/rtmpose/rtmpose-m_simcc-body7_pt-body7-halpe26_700e-256x192-4d3e73dd_20230605.pth"
+
+  # "auto" lets MMPose select its default RTMDet human detector.
+  # Use "whole_image" only for pose-model smoke tests without detection.
+  detector: "auto"
+  model_cache_dir: "assets/models/cache"
+  device: "auto"
+  bbox_threshold: 0.3
+  keypoint_threshold: 0.3
+  min_valid_keypoints: 10
+  min_mean_keypoint_score: 0.3
+  single_person: true
+
+  # Experimental one-stage multi-person backend. It is never selected unless
+  # view_live_multi_person.py receives `--pose-backend rtmo`.
+  experimental_rtmo:
+    # The tiny 416 model is the first latency candidate. MMPose resolves its
+    # official checkpoint from the installed model index on first use.
+    model: "rtmo-t_8xb32-600e_body7-416x416"
+    model_checkpoint: null
+    bbox_threshold: 0.3
+    nms_threshold: 0.65
+    keypoint_threshold: 0.3
+    min_valid_keypoints: 10
+    min_mean_keypoint_score: 0.3

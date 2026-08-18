@@ -1,0 +1,38 @@
+[Unit]
+Description=HumanPose TensorRT multi-person RGB-D publisher
+Wants=network-online.target
+After=network-online.target gaussflow-realtime.service
+Requires=gaussflow-realtime.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=nvidia
+Group=nvidia
+WorkingDirectory=/home/nvidia/program/humanpose
+RuntimeDirectory=humanpose-mpl
+RuntimeDirectoryMode=0755
+
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/home/nvidia/program/humanpose/src
+Environment=MPLCONFIGDIR=/run/humanpose-mpl
+Environment=HUMANPOSE_TRT_DETECTOR_INTERVAL=2
+Environment=HUMANPOSE_TRT_DEPTH_CONNECTED_INTERVAL=3
+Environment=CUDA_MODULE_LOADING=LAZY
+Environment="LD_LIBRARY_PATH=/opt/MRDVS/lib:/usr/local/cuda/lib64:/usr/lib/aarch64-linux-gnu"
+Environment=http_proxy=
+Environment=https_proxy=
+Environment=HTTP_PROXY=
+Environment=HTTPS_PROXY=
+
+ExecStart=/home/nvidia/program/humanpose/.venv-nano/bin/python /home/nvidia/program/humanpose/scripts/view_live_multi_person_tensorrt.py --live-config /home/nvidia/program/humanpose/configs/live.nano.yaml --camera-config /home/nvidia/program/humanpose/configs/camera.yaml --pose-config /home/nvidia/program/humanpose/configs/pose.yaml --tracking-config /home/nvidia/program/humanpose/configs/tracking.yaml --source sdk --device cuda:0 --detector auto --identity-tracker geometry --recovery-method depth_connected --max-persons 2 --publish-stickmen --headless --auto-calibrate --calibration-output /home/nvidia/program/humanpose/outputs/calibration/live_camera_calibration.json
+
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+LimitMEMLOCK=infinity
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

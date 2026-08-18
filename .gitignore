@@ -1,0 +1,10 @@
+assets/models/**/*.pth
+assets/models/smpl/*.pkl
+assets/models/smpl/*.npz
+assets/models/cache/
+outputs/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+log/
+.venv-trt-export/

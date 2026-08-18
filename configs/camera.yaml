@@ -1,0 +1,108 @@
+camera:
+  rgb_width: 816
+  rgb_height: 612
+  depth_width: 816
+  depth_height: 612
+
+  depth_unit: "millimeter"
+  depth_scale: 0.001
+  min_depth_m: 0.3
+  max_depth_m: 6.0
+  depth_window_radius: 3
+
+  # "window_median" keeps the original 7x7 depth baseline.
+  # Multi-person "depth_connected" clusters spatially connected surfaces
+  # directly in local depth-image windows and reuses the thresholds below.
+  # "pointcloud_cluster" builds one organized cloud per frame, filters it
+  # with a bbox + torso-depth proxy mask, then selects local 3D surfaces.
+  depth_recovery:
+    method: "pointcloud_cluster"
+    # Experimental multi-person mode: run the fast 26-joint lift first and
+    # invoke robust point-cloud recovery only for suspicious face/arm groups.
+    adaptive_hybrid:
+      min_depth_confidence: 0.55
+      max_torso_depth_delta_m: 0.45
+      head_neck_max_length_m: 0.40
+      upper_arm_max_length_m: 0.50
+      forearm_max_length_m: 0.45
+    pointcloud_cluster:
+      radius_scale_bbox_height: 0.025
+      min_radius_px: 4
+      max_radius_px: 9
+      expansion_factor: 1.75
+      expanded_max_radius_px: 14
+      bbox_padding_ratio: 0.05
+      min_cluster_points: 3
+      support_target_points: 8
+      depth_edge_abs_m: 0.025
+      depth_edge_relative: 0.012
+      max_depth_edge_m: 0.070
+      # Confidence compactness scale, not a hard rejection threshold.
+      cluster_depth_mad_scale_m: 0.050
+      torso_keypoint_threshold: 0.5
+      torso_group_gap_abs_m: 0.20
+      torso_group_gap_relative: 0.08
+      min_torso_seed_count: 2
+      person_depth_near_tolerance_m: 0.75
+      person_depth_near_tolerance_ratio: 0.35
+      person_depth_far_tolerance_m: 0.60
+      person_depth_far_tolerance_ratio: 0.25
+      person_depth_sigma_m: 0.30
+      person_depth_sigma_ratio: 0.12
+      ambiguity_relative_margin: 0.02
+      ambiguity_depth_gap_m: 0.08
+      reject_ambiguous_clusters: true
+      # Jointly select nose/eye surfaces before using them as ear anchors.
+      face_group_gate_enabled: true
+      face_candidate_limit: 5
+      face_core_depth_tolerance_m: 0.10
+      face_core_depth_tolerance_ratio: 0.04
+      nose_eye_max_length_m: 0.15
+      eye_eye_max_length_m: 0.18
+      face_neck_far_tolerance_m: 0.15
+      face_missing_score: 0.25
+      # Ear keypoints often sit on the person/background silhouette. Rerank
+      # their local surfaces using already recovered nose/eye depths and the
+      # same-side eye-to-ear metric distance.
+      ear_topology_gate_enabled: true
+      ear_face_depth_tolerance_m: 0.20
+      ear_face_depth_tolerance_ratio: 0.08
+      eye_ear_max_length_m: 0.25
+      min_face_anchor_count: 2
+      # Optimize ankle/toe/heel surfaces as one group. Missing is preferable
+      # to a locally supported but metrically incoherent floor surface.
+      foot_topology_gate_enabled: true
+      foot_candidate_limit: 6
+      foot_ankle_min_score_ratio: 0.75
+      foot_min_person_quality: 0.10
+      foot_missing_score: 0.25
+      foot_compactness_weight: 0.15
+      knee_ankle_max_length_m: 0.75
+      ankle_toe_max_length_m: 0.30
+      ankle_heel_max_length_m: 0.22
+      toe_pair_max_length_m: 0.20
+      # Reject one-sided shoulder/hip observations that are both metrically
+      # too long and strongly asymmetric; temporal/bone stages then recover.
+      self_occlusion_gate_enabled: true
+      shoulder_neck_max_length_m: 0.32
+      hip_center_max_length_m: 0.22
+      self_occlusion_asymmetry_ratio: 1.60
+
+  align_depth_to_rgb: true
+  images_undistorted: true
+
+  intrinsics:
+    fx: 390.697235107
+    fy: 390.601348877
+    cx: 408.284454346
+    cy: 321.971252441
+
+  distortion:
+    model: "RADTAN_5"
+    coefficients: [0.0, 0.0, 0.0, 0.0, 0.0]
+
+  coordinate_system:
+    handedness: "right"
+    x_axis: "right"
+    y_axis: "down"
+    z_axis: "forward"

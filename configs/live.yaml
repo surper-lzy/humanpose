@@ -1,0 +1,155 @@
+live:
+  source:
+    # Direct SDK capture is the low-latency default. Use
+    # --source directory to return to camera-viewer file monitoring.
+    type: "sdk"
+
+    # The camera viewer continuously writes exact timestamp-prefix RGB-D pairs.
+    directory: "/home/fr1511b/下载/LxCameraViewer-ubuntu20-viewer/LxCameraViewer/data/FF6690772788"
+    # Show the newest complete pair at startup, then consume only newer pairs.
+    start_at: "latest"
+    poll_interval_ms: 50
+    # Require unchanged RGB/depth size and mtime before decoding a pair.
+    stable_interval_ms: 100
+    read_timeout_ms: 1000
+
+    sdk:
+      # The wheel can be imported directly; it does not have to be installed.
+      python_wheel: "/home/fr1511b/下载/MRDVS-2.4.60.260126-ubuntu-sdk/MRDVS/Sample/python/lx_camera_py-1.3.3-py3-none-any.whl"
+      library_path: "/opt/MRDVS/lib/libLxCameraApi.so"
+      open_mode: "id"
+      open_param: "FF6690772788"
+      align_depth_to_rgb: true
+      sync_frame: true
+      # The SDK can report success while returning RGB frame N+1 with depth
+      # frame N. Drop those packets before any pose or depth recovery work.
+      require_matching_frame_ids: true
+      # Alignment does not use amplitude and disabling it saves bandwidth.
+      enable_amplitude: false
+      # No camera-side application output is consumed, so disable it before
+      # forced sync to avoid carrying an unnecessary application stream.
+      disable_builtin_algorithm: true
+      # SDK declares its 3-channel output as RGB888; OpenCV/RTMPose use BGR.
+      rgb_order: "rgb"
+      # The SDK header uses microseconds for its sensor timebase.
+      timestamp_source: "sensor_us"
+
+  # Use the optimized point-cloud skeleton for both local visualization and
+  # headless WebSocket publishing. window_median remains an explicit
+  # low-latency fallback when surface quality is less important.
+  recovery_method: "pointcloud_cluster"
+
+  # Camera-viewer convention retained from the earlier installation:
+  # p_application = Rz(yaw) @ Ry(pitch) @ Rx(roll) @ p_camera + translation.
+  application_extrinsics:
+    transform: "application_from_camera"
+    euler_order: "ZYX"
+    roll_deg: 90.38
+    pitch_deg: -179.83
+    yaw_deg: 89.95
+    translation_m: [0.0, 0.0, 0.78795]
+
+  # At startup, keep the SDK-provided aligned RGB intrinsics and estimate the
+  # camera-to-application roll, pitch, and height from the visible floor.
+  # Configured yaw/X-Y translation are retained, so the scene heading does not
+  # rotate between deployments. The accepted transform is frozen until the
+  # process restarts; a weak/occluded floor falls back to the values above.
+  auto_calibration:
+    enabled: true
+    sample_frame_count: 12
+    max_attempt_frame_count: 30
+    exclude_detected_people: true
+    min_inlier_ratio: 0.35
+    max_residual_p95_m: 0.04
+    fallback_to_config: true
+    output_path: "outputs/calibration/live_camera_calibration.json"
+
+  # Publish final Halpe26 application-space joints through the FastAPI hub on
+  # this host. --publish-url can temporarily override the deployed URL.
+  websocket_publish:
+    enabled: true
+    url: "ws://127.0.0.1:8000/api/realtime/ws"
+    client_type: "python"
+    client_id: "rgbd-avatar-FF6690772788"
+    source_id: "FF6690772788"
+    event: "avatar.stickman.updated"
+    topic: "avatar:stickman:FF6690772788"
+    open_timeout_s: 5.0
+    close_timeout_s: 2.0
+    ping_interval_s: 20.0
+    ping_timeout_s: 20.0
+    reconnect_initial_s: 0.5
+    reconnect_max_s: 10.0
+
+  # Multi-person mode uses its own batched event. `geometry` is the established
+  # fallback; `shadow` adds RGB-D motion, torso appearance and overlap-aware ID
+  # preservation.
+  multi_person:
+    # Current frontend A/B baseline: connected depth surfaces avoid the full
+    # point-cloud pass while preserving per-track depth history.
+    recovery_method: "depth_connected"
+    identity_tracker: "geometry"
+    # A locally missing wrist/ankle may use velocity extrapolation for roughly
+    # one live frame, but must not keep flying for the 1.1 s offline window.
+    max_prediction_s: 0.12
+    # After velocity extrapolation expires, reconstruct a distal joint from
+    # its current 2D ray and the per-track calibrated bone length. These points
+    # stay predicted and never feed raw depth guidance or calibration.
+    kinematic_fallback:
+      enabled: true
+      max_age_s: 0.25
+      min_keypoint_confidence: 0.30
+      confidence_scale: 0.35
+      max_joint_speed_m_s: 3.0
+      displacement_slack_m: 0.05
+      # For an established track only, two visible torso keypoints plus one
+      # reliable 3D torso anchor may carry the last complete skeleton rigidly.
+      # New tracks still use the stricter common 8-joint/3-torso quality gate.
+      complete_skeleton: true
+      # If a distal joint never had valid depth, rebuild it from its current
+      # 2D direction in the parent's depth plane with a bounded bone length.
+      reconstruct_from_current_2d: true
+      min_core_2d_joint_count: 2
+      min_core_3d_joint_count: 1
+      min_history_joint_count: 8
+      max_torso_rotation_deg: 45.0
+    # Live 15-16 FPS profile. A shared cutoff gives all observed joints the
+    # same per-frame response, preventing fast wrists and slow shoulders from
+    # acquiring visibly different filter phase.
+    one_euro:
+      min_cutoff_hz: 1.5
+      beta: 1.0
+      derivative_cutoff_hz: 1.0
+      shared_cutoff: true
+      shared_speed_percentile: 75.0
+    bone_stabilization:
+      # After the per-track raw bone prior becomes ready, allow a bounded
+      # output-only projection of observed joints. Joint 19 remains fixed by
+      # tracking.yaml, so stabilization cannot translate the whole person.
+      project_observed: true
+    shadow_identity:
+      min_confirmed_hits: 1
+      normal_missing_s: 0.35
+      occluded_missing_s: 1.0
+      overlap_iou: 0.25
+      ambiguity_margin: 0.08
+      max_match_cost: 1.15
+      max_center_distance_ratio: 1.50
+      max_root_distance_m: 0.90
+      max_appearance_distance: 0.65
+      velocity_alpha: 0.55
+      appearance_alpha: 0.15
+    websocket_publish:
+      enabled: true
+      event: "avatar.stickmen.updated"
+
+  viewer:
+    # Default live 3D output is the lightweight classic stick figure.
+    avatar_model: "stickman"
+    show_rgb_views: true
+    rgb_view_scale: 0.75
+    sphere_resolution: 6
+    grid_extent_m: 4.0
+    grid_spacing_m: 0.25
+    window_width: 1280
+    window_height: 800

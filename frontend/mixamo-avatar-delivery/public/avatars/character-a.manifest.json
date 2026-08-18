@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "avatar_id": "character-a",
+  "label": "Character A",
+  "model_url": "/avatars/character-a.glb",
+  "model_sha256": "45bb2e7d3471cd6033b248d80c37898dda2e26ea216425bcc1dcf99e118e72ce",
+  "model_bytes": 11257640,
+  "source_file": "Ch09_nonPBR.fbx",
+  "source_sha256": "3684e5212027ed69c7e7db6898d17803e3962ed168e219e93c01452d0f4de75c",
+  "vertex_count": 17071,
+  "triangle_count": 31292,
+  "bone_count": 65,
+  "rig_type": "mixamo",
+  "coordinate_system": {
+    "handedness": "right",
+    "unit": "meter",
+    "up_axis": "+y"
+  }
+}
