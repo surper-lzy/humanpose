@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
             / "outputs/tensorrt_fp16/engines/rtmpose_m_halpe26_256x192_fp16.engine"
         ),
     )
-    parser.add_argument("--max-persons", type=int, default=2)
+    parser.add_argument("--max-persons", type=int, default=4)
     parser.add_argument("--bbox-threshold", type=float, default=0.3)
     parser.add_argument("--keypoint-threshold", type=float, default=0.3)
     parser.add_argument(

@@ -88,7 +88,7 @@ def parse_args() -> argparse.Namespace:
         ),
         default="hybrid",
     )
-    parser.add_argument("--max-persons", type=int, default=2)
+    parser.add_argument("--max-persons", type=int, default=4)
     parser.add_argument("--max-missing-s", type=float, default=0.35)
     parser.add_argument("--shadow-normal-missing-s", type=float, default=0.35)
     parser.add_argument("--shadow-occluded-missing-s", type=float, default=1.0)

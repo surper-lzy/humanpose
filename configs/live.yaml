@@ -142,6 +142,16 @@ live:
     websocket_publish:
       enabled: true
       event: "avatar.stickmen.updated"
+    # Independent binary JPEG channel for the browser's RGB + 2D Halpe26
+    # diagnostic window. It is rate-limited and latest-only, so it cannot
+    # accumulate behind the motion stream on Nano.
+    rgb_preview_publish:
+      enabled: true
+      url: "ws://127.0.0.1:8000/api/realtime/ws"
+      source_id: "FF6690772788"
+      fps: 5.0
+      jpeg_quality: 75
+      scale: 0.75
 
   viewer:
     # Default live 3D output is the lightweight classic stick figure.

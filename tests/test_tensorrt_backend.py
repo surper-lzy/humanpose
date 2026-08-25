@@ -108,6 +108,16 @@ def test_tensorrt_config_rejects_more_than_exported_batch(tmp_path: Path) -> Non
         )
 
 
+def test_tensorrt_config_accepts_exported_batch_four(tmp_path: Path) -> None:
+    config = TensorRTHalpe26BackendConfig(
+        detector_engine=tmp_path / "det.engine",
+        pose_engine=tmp_path / "pose.engine",
+        max_persons=4,
+    )
+
+    assert config.max_persons == 4
+
+
 def test_tensorrt_config_rejects_invalid_detector_interval(
     tmp_path: Path,
 ) -> None:

@@ -135,7 +135,7 @@ _EXTRA_COMPLETION_LINK_MAX_M: dict[tuple[int, int], float] = {
 class LocalMultiPersonConfig:
     """Association and lifecycle thresholds for the local experiment."""
 
-    max_persons: int = 2
+    max_persons: int = 4
     max_missing_s: float = 0.35
     minimum_bbox_iou: float = 0.01
     max_center_distance_ratio: float = 1.25

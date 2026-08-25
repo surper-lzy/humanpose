@@ -30,6 +30,8 @@ from rgbd_avatar.live import (
     LxCameraRGBDSource,
     Pose3DQualityConfig,
     RGBDSource,
+    RgbPreviewPublishConfig,
+    RgbPreviewWebSocketPublisher,
     StickmanPublishConfig,
     StickmenWebSocketPublisher,
     calibrate_live_camera,
@@ -138,10 +140,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-persons",
         type=int,
-        default=2,
+        default=4,
         help=(
-            "Maximum people lifted to 3D and tracked locally. Defaults to 2 "
-            "to stay near the camera frame period."
+            "Maximum people lifted to 3D and tracked locally. Defaults to 4."
         ),
     )
     parser.add_argument("--max-missing-s", type=float, default=0.35)
@@ -179,6 +180,17 @@ def parse_args() -> argparse.Namespace:
         "--publish-url",
         default=None,
         help="Override the multi-person WebSocket hub URL and enable publish.",
+    )
+    parser.add_argument(
+        "--publish-rgb-preview",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Publish a low-rate JPEG RGB + Halpe26 browser preview.",
+    )
+    parser.add_argument(
+        "--rgb-preview-url",
+        default=None,
+        help="Override the binary RGB preview WebSocket URL and enable it.",
     )
     parser.add_argument(
         "--headless",
@@ -552,6 +564,47 @@ def _build_multi_publish_config(
     )
 
 
+def _build_rgb_preview_publish_config(
+    args: argparse.Namespace,
+    live_config: dict[str, Any],
+    pose_config: dict[str, Any],
+) -> RgbPreviewPublishConfig:
+    common = dict(live_config.get("websocket_publish", {}))
+    mapping = dict(
+        live_config.get("multi_person", {}).get("rgb_preview_publish", {})
+    )
+    mapping.setdefault("source_id", common.get("source_id", "camera-01"))
+    mapping.setdefault(
+        "url",
+        "ws://127.0.0.1:8000/api/realtime/ws",
+    )
+    mapping.setdefault(
+        "keypoint_threshold",
+        float(pose_config["keypoint_threshold"]),
+    )
+    for field_name in (
+        "open_timeout_s",
+        "close_timeout_s",
+        "ping_interval_s",
+        "ping_timeout_s",
+        "reconnect_initial_s",
+        "reconnect_max_s",
+    ):
+        if field_name not in mapping and field_name in common:
+            mapping[field_name] = common[field_name]
+    enabled_override = args.publish_rgb_preview
+    if enabled_override is None and args.publish_stickmen is True:
+        # Existing Nano service units already opt in with --publish-stickmen.
+        # Make the paired diagnostic preview available without requiring a
+        # privileged systemd unit edit; --no-publish-rgb-preview still wins.
+        enabled_override = True
+    return RgbPreviewPublishConfig.from_mapping(
+        mapping,
+        enabled_override=enabled_override,
+        url_override=args.rgb_preview_url,
+    )
+
+
 def _run_startup_calibration(
     args: argparse.Namespace,
     source: RGBDSource,
@@ -772,6 +825,12 @@ def main(
     )
     publish_config = _build_multi_publish_config(args, live_config)
     publisher = StickmenWebSocketPublisher(publish_config)
+    preview_config = _build_rgb_preview_publish_config(
+        args,
+        live_config,
+        pose_config,
+    )
+    preview_publisher = RgbPreviewWebSocketPublisher(preview_config)
     if publish_config.enabled:
         LOGGER.info(
             "Multi-person WebSocket enabled: event=%s topic=%s",
@@ -781,7 +840,29 @@ def main(
         publisher.start()
     else:
         LOGGER.info("Multi-person WebSocket disabled; local processing only.")
-    result_callback = publisher.submit if publish_config.enabled else None
+    if preview_config.enabled:
+        LOGGER.info(
+            "RGB skeleton preview enabled: source=%s fps=%.1f quality=%d scale=%.2f",
+            preview_config.source_id,
+            preview_config.fps,
+            preview_config.jpeg_quality,
+            preview_config.scale,
+        )
+        preview_publisher.start()
+    else:
+        LOGGER.info("RGB skeleton browser preview disabled.")
+
+    callbacks: list[ResultCallback] = []
+    if publish_config.enabled:
+        callbacks.append(publisher.submit)
+    if preview_config.enabled:
+        callbacks.append(preview_publisher.submit)
+
+    def publish_result(result: LocalMultiPersonPoseResult) -> None:
+        for callback in callbacks:
+            callback(result)
+
+    result_callback = publish_result if callbacks else None
 
     if args.validate_only:
         try:
@@ -795,9 +876,12 @@ def main(
             )
         finally:
             publisher.stop()
+            preview_publisher.stop()
         LOGGER.info("Local multi-person source statistics: %s", source.stats)
         if publish_config.enabled:
             LOGGER.info("Multi-person publisher statistics: %s", publisher.stats)
+        if preview_config.enabled:
+            LOGGER.info("RGB preview publisher statistics: %s", preview_publisher.stats)
         return 0
 
     worker = LatestLocalMultiPoseWorker(
@@ -818,6 +902,7 @@ def main(
         finally:
             worker.stop()
             publisher.stop()
+            preview_publisher.stop()
         if worker.error is not None:
             raise RuntimeError(
                 "Local multi-person worker failed."
@@ -825,6 +910,8 @@ def main(
         LOGGER.info("Local multi-person source statistics: %s", source.stats)
         if publish_config.enabled:
             LOGGER.info("Multi-person publisher statistics: %s", publisher.stats)
+        if preview_config.enabled:
+            LOGGER.info("RGB preview publisher statistics: %s", preview_publisher.stats)
         return 0
 
     from rgbd_avatar.visualization.live_multi_person import (
@@ -870,9 +957,12 @@ def main(
         worker.stop()
         renderer.close()
         publisher.stop()
+        preview_publisher.stop()
     if worker.error is not None:
         raise RuntimeError("Local multi-person worker failed.") from worker.error
     LOGGER.info("Local multi-person source statistics: %s", source.stats)
     if publish_config.enabled:
         LOGGER.info("Multi-person publisher statistics: %s", publisher.stats)
+    if preview_config.enabled:
+        LOGGER.info("RGB preview publisher statistics: %s", preview_publisher.stats)
     return 0

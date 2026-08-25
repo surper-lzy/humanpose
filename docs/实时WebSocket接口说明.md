@@ -5,7 +5,7 @@
 这个接口用于浏览器前端、Python 后端或其他系统接入同一条实时通道。
 
 - 接口默认不需要登录鉴权，适合测试阶段和内部联调
-- 所有消息都用 JSON 文本帧传输
+- 姿态、任务等业务消息使用 JSON 文本帧；RGB 骨架预览使用独立连接上的 JPEG 二进制帧
 - 服务端会按 topic 做订阅分发
 - 当前实现是进程内 hub，同一个后端实例里的连接可以互通
 
@@ -444,3 +444,43 @@ topic = avatar:stickman:FF6690772788
   应立即隐藏人物，不能继续显示上一帧姿态。
 - 人物仍被可靠观测、仅个别关节短时缺失时，`observed_in_frame=true`；这些
   关节仍可由后端的局部时序预测承接，不受整人隐藏规则影响。
+
+## 10. RGB 实拍 + Halpe26 骨架预览
+
+RGB 诊断画面与三维姿态使用两条独立 WebSocket 连接，但都通过现有
+`/api/realtime/ws` 路径接入。这样 Nano 上已有的 Nginx WebSocket 反代无须新增
+端口或 location，JPEG 传输也不会进入 JSON topic hub。
+
+生产者连接：
+
+```text
+ws://127.0.0.1:8000/api/realtime/ws?preview_role=producer&preview_source_id=FF6690772788
+```
+
+浏览器连接（同源部署时会自动使用 `ws://当前地址` 或 `wss://当前地址`）：
+
+```text
+ws://<host>/api/realtime/ws?preview_role=browser&preview_source_id=FF6690772788
+```
+
+约定如下：
+
+- 生产者只发送完整 JPEG 二进制帧，不发送 JSON、Base64 或深度图。
+- 后端按 `preview_source_id` 隔离相机来源。
+- 每个浏览器只有一个待发送槽；新帧会覆盖尚未发出的旧帧，不形成延迟队列。
+- 新连接会立即收到服务端保存的最新一帧。
+- humanpose 默认以 5 FPS、JPEG quality 75、原图 0.75 倍尺寸发布；三维姿态仍逐帧发布。
+- 帧上已经包含多人彩色 Halpe26 骨架、检测框、稳定 track ID 和诊断信息。
+- 当前接口与原实时 hub 一样没有鉴权，只应在可信局域网使用。
+
+humanpose 开关：
+
+```bash
+--publish-rgb-preview
+--no-publish-rgb-preview
+--rgb-preview-url ws://127.0.0.1:8000/api/realtime/ws
+```
+
+Nano 的 `humanpose-tensorrt.service` 已使用 `--publish-stickmen` 时，新版本会同步
+启用配套 RGB 预览；需要节省带宽或 JPEG 编码开销时可显式追加
+`--no-publish-rgb-preview`。

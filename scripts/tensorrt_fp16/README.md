@@ -159,7 +159,7 @@ PYTHONPATH=src python scripts/view_live_multi_person_tensorrt.py \
   --detector auto \
   --identity-tracker geometry \
   --recovery-method depth_connected \
-  --max-persons 2 \
+  --max-persons 4 \
   --publish-stickmen \
   --headless
 ```
@@ -175,4 +175,6 @@ PYTHONPATH=src python scripts/tensorrt_fp16/test_single_image_nano.py \
 两个命令默认从 `outputs/tensorrt_fp16/engines` 加载 Engine。需要覆盖
 路径时设置 `HUMANPOSE_TRT_DETECTOR_ENGINE` 和
 `HUMANPOSE_TRT_POSE_ENGINE`。原来的 `rtmpose` 入口保持不变，可随时
-回退。
+回退。当前 RTMPose Engine 的动态 batch profile 为 `1/2/4`，因此
+`--max-persons 4` 不需要重新构建 Engine；四人场景仍需在 Nano 上实测
+整链路帧率和温度。

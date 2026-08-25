@@ -25,7 +25,7 @@ Environment=https_proxy=
 Environment=HTTP_PROXY=
 Environment=HTTPS_PROXY=
 
-ExecStart=/home/nvidia/program/humanpose/.venv-nano/bin/python /home/nvidia/program/humanpose/scripts/view_live_multi_person_tensorrt.py --live-config /home/nvidia/program/humanpose/configs/live.nano.yaml --camera-config /home/nvidia/program/humanpose/configs/camera.yaml --pose-config /home/nvidia/program/humanpose/configs/pose.yaml --tracking-config /home/nvidia/program/humanpose/configs/tracking.yaml --source sdk --device cuda:0 --detector auto --identity-tracker geometry --recovery-method depth_connected --max-persons 2 --publish-stickmen --headless --auto-calibrate --calibration-output /home/nvidia/program/humanpose/outputs/calibration/live_camera_calibration.json
+ExecStart=/home/nvidia/program/humanpose/.venv-nano/bin/python /home/nvidia/program/humanpose/scripts/view_live_multi_person_tensorrt.py --live-config /home/nvidia/program/humanpose/configs/live.nano.yaml --camera-config /home/nvidia/program/humanpose/configs/camera.yaml --pose-config /home/nvidia/program/humanpose/configs/pose.yaml --tracking-config /home/nvidia/program/humanpose/configs/tracking.yaml --source sdk --device cuda:0 --detector auto --identity-tracker geometry --recovery-method depth_connected --max-persons 4 --publish-stickmen --headless --auto-calibrate --calibration-output /home/nvidia/program/humanpose/outputs/calibration/live_camera_calibration.json
 
 Restart=on-failure
 RestartSec=5

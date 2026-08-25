@@ -50,7 +50,7 @@ class TensorRTHalpe26BackendConfig:
 
     detector_engine: Path
     pose_engine: Path
-    max_persons: int = 2
+    max_persons: int = 4
     bbox_threshold: float = 0.3
     keypoint_threshold: float = 0.3
     min_valid_keypoints: int = 10

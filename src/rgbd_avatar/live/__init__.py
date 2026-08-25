@@ -37,6 +37,12 @@ from .stickman_websocket import (
     build_stickmen_payload,
     build_stickman_payload,
 )
+from .rgb_preview_websocket import (
+    RgbPreviewPublishConfig,
+    RgbPreviewPublisherStats,
+    RgbPreviewWebSocketPublisher,
+    encode_rgb_preview_jpeg,
+)
 
 __all__ = [
     "AdaptiveHybridConfig",
@@ -61,6 +67,9 @@ __all__ = [
     "OPTICAL_UPRIGHT_L_FROM_C",
     "RGBDFrame",
     "RGBDSource",
+    "RgbPreviewPublishConfig",
+    "RgbPreviewPublisherStats",
+    "RgbPreviewWebSocketPublisher",
     "PoseBackend",
     "StickmanPublishConfig",
     "StickmanPublisherStats",
@@ -71,5 +80,6 @@ __all__ = [
     "application_extrinsics_from_ground_plane",
     "calibrate_live_camera",
     "capture_timestamp_ns",
+    "encode_rgb_preview_jpeg",
     "rotation_zyx_from_degrees",
 ]

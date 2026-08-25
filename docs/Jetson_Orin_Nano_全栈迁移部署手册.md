@@ -3744,7 +3744,7 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
     --detector auto \
     --identity-tracker geometry \
     --recovery-method depth_connected \
-    --max-persons 2 \
+    --max-persons 4 \
     --publish-stickmen \
     --headless
 ```
@@ -4026,7 +4026,7 @@ ExecStartPre=/usr/bin/test -x /home/nvidia/program/humanpose/.venv-nano/bin/pyth
 ExecStartPre=/usr/bin/test -f /home/nvidia/program/humanpose/configs/live.nano.yaml
 ExecStartPre=/usr/bin/test -f /home/nvidia/program/humanpose/outputs/tensorrt_fp16/engines/rtmdet_m_person_640_fp16.engine
 ExecStartPre=/usr/bin/test -f /home/nvidia/program/humanpose/outputs/tensorrt_fp16/engines/rtmpose_m_halpe26_256x192_fp16.engine
-ExecStart=/home/nvidia/program/humanpose/.venv-nano/bin/python scripts/view_live_multi_person_tensorrt.py --live-config configs/live.nano.yaml --camera-config configs/camera.yaml --pose-config configs/pose.yaml --tracking-config configs/tracking.yaml --source sdk --device cuda:0 --detector auto --identity-tracker geometry --recovery-method depth_connected --max-persons 2 --publish-stickmen --headless
+ExecStart=/home/nvidia/program/humanpose/.venv-nano/bin/python scripts/view_live_multi_person_tensorrt.py --live-config configs/live.nano.yaml --camera-config configs/camera.yaml --pose-config configs/pose.yaml --tracking-config configs/tracking.yaml --source sdk --device cuda:0 --detector auto --identity-tracker geometry --recovery-method depth_connected --max-persons 4 --publish-stickmen --headless
 Restart=on-failure
 RestartSec=5
 KillSignal=SIGINT

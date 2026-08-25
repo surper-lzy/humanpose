@@ -1143,8 +1143,6 @@ def test_pose3d_quality_config_rejects_invalid_prior_ratio() -> None:
         Pose3DQualityConfig(prior_length_ratio=1.0)
     with np.testing.assert_raises(ValueError):
         Pose3DQualityConfig(max_spine_projection_ratio=0.9)
-
-
 def test_guided_window_keeps_track_depth_and_rejects_full_occluder() -> None:
     pose = _pose(22.0)
     processor = _processor(
